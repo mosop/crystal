@@ -23,7 +23,7 @@ abstract class Channel(T)
 
   def close
     @closed = true
-    Scheduler.enqueue @receivers
+    Scheduler.current.enqueue @receivers
     @receivers.clear
     nil
   end
@@ -95,7 +95,7 @@ abstract class Channel(T)
       end
 
       ops.each &.wait
-      Scheduler.reschedule
+      Scheduler.current.reschedule
       ops.each &.unwait
     end
   end
@@ -161,13 +161,13 @@ class Channel::Buffered(T) < Channel(T)
     while full?
       raise_if_closed
       @senders << Fiber.current
-      Scheduler.reschedule
+      Scheduler.current.reschedule
     end
 
     raise_if_closed
 
     @queue << value
-    Scheduler.enqueue @receivers
+    Scheduler.current.enqueue @receivers
     @receivers.clear
 
     self
@@ -177,11 +177,11 @@ class Channel::Buffered(T) < Channel(T)
     while empty?
       yield if @closed
       @receivers << Fiber.current
-      Scheduler.reschedule
+      Scheduler.current.reschedule
     end
 
     @queue.shift.tap do
-      Scheduler.enqueue @senders
+      Scheduler.current.enqueue @senders
       @senders.clear
     end
   end
@@ -206,7 +206,7 @@ class Channel::Unbuffered(T) < Channel(T)
     while @has_value
       raise_if_closed
       @senders << Fiber.current
-      Scheduler.reschedule
+      Scheduler.current.reschedule
     end
 
     raise_if_closed
@@ -218,7 +218,7 @@ class Channel::Unbuffered(T) < Channel(T)
     if receiver = @receivers.pop?
       receiver.resume
     else
-      Scheduler.reschedule
+      Scheduler.current.reschedule
     end
   end
 
@@ -229,7 +229,7 @@ class Channel::Unbuffered(T) < Channel(T)
       if sender = @senders.pop?
         sender.resume
       else
-        Scheduler.reschedule
+        Scheduler.current.reschedule
       end
     end
 
@@ -237,7 +237,7 @@ class Channel::Unbuffered(T) < Channel(T)
 
     @value.tap do
       @has_value = false
-      Scheduler.enqueue @sender.not_nil!
+      Scheduler.current.enqueue @sender.not_nil!
     end
   end
 
