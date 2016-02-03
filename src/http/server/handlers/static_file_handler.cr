@@ -61,13 +61,20 @@ class HTTP::StaticFileHandler < HTTP::Handler
     end
   end
 
-  record DirectoryListing, request_path, path do
+  struct DirectoryListing
+    getter request_path
+    getter path
+
+    def initialize(@request_path, @path)
+    end
+
     def escaped_request_path
-      @escaped_request_path ||= begin
-        esc_path = request_path.split('/').map { |path| URI.escape path }.join('/')
-        esc_path = esc_path[0..-2] if !esc_path.empty? && esc_path[-1] == '/'
-        esc_path
-      end
+      request_path
+      # @escaped_request_path ||= begin
+      #   esc_path = request_path.split('/').map { |path| URI.escape path }.join('/')
+      #   esc_path = esc_path[0..-2] if !esc_path.empty? && esc_path[-1] == '/'
+      #   esc_path
+      # end
     end
 
     ECR.def_to_s "#{__DIR__}/static_file_handler.html"
